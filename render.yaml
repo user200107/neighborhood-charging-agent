@@ -1,0 +1,42 @@
+# Render Blueprint：FastAPI 后端 + PostgreSQL
+#
+# 使用方式：
+#   1. 将仓库推送到 GitHub
+#   2. Render Dashboard → New → Blueprint → 选择仓库
+#   3. 部署完成后把 Web Service 公网地址填入 Netlify 环境变量 API_BASE_URL
+#
+# 免费计划实例会休眠，首次请求可能较慢；生产请使用付费实例与高可用数据库。
+
+services:
+  - type: web
+    name: neighborhood-charging-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: DEMO_MODE
+        value: "true"
+      - key: SEED_DEMO_DATA
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ACCESS_TOKEN_MINUTES
+        value: "480"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neighborhood-charging-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: "*"
+
+databases:
+  - name: neighborhood-charging-db
+    plan: free
+    databaseName: charging
+    user: charging

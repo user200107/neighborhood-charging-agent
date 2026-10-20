@@ -1,0 +1,26 @@
+# Netlify 部署配置
+#
+# 说明：Netlify Functions 官方仅支持 JavaScript/TypeScript/Go，不能直接运行
+# Python/FastAPI。因此采用「Netlify 托管前端 + Function 反向代理 + 独立
+# Python 后端」的架构。后端部署方式见 DEPLOY.md。
+#
+# 必填环境变量（Netlify UI → Site configuration → Environment variables）：
+#   API_BASE_URL = https://your-fastapi-host.example.com
+#
+# 构建：
+#   netlify env:set API_BASE_URL https://your-api.example.com
+#   netlify deploy --build --prod
+
+[build]
+  command = "python scripts/build_netlify.py"
+  publish = "dist"
+
+[build.environment]
+  PYTHON_VERSION = "3.12"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# /api/* 由 netlify/functions/api-proxy.mjs 的 path 配置接管，
+# 不需要额外 redirects（避免改写原始路径）。

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" role="img" aria-label="邻里充电">
+  <rect width="48" height="48" rx="13" fill="#0c1f1a"/>
+  <path d="M28 6 14 27h9l-2 15 14-22h-9l2-14Z" fill="#34d399"/>
+  <text x="60" y="30" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="700" fill="#0f1f1a">邻里充电</text>
+  <text x="60" y="43" font-family="Inter, PingFang SC, sans-serif" font-size="9" letter-spacing="2" fill="#6b7d75">NEIGHBOR ENERGY</text>
+</svg>
