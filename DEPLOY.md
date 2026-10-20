@@ -241,9 +241,10 @@ curl https://<your-site>.netlify.app/api/health
 | MySQL 连接 1045 | 容器未启动或 `.env` 密码与 compose 不一致 | 使用 `docker compose up -d`；默认 `agent_user/123456` |
 | PostgreSQL 连接超时 | 5432 未启动 | `docker compose up -d postgres`；检查 `docker compose logs postgres` |
 | `503 API_NOT_CONFIGURED` | Netlify 未设置 `API_BASE_URL` | 设置环境变量并重新部署 |
-| `502 UPSTREAM_UNREACHABLE` | 后端休眠/域名错误/证书问题 | 访问后端 `/api/health`，确认 Render 实例已唤醒 |
+| `502 UPSTREAM_UNREACHABLE` | Vercel 域名不可达、Function 报错或部署保护开启 | 检查 Vercel 部署日志；确认 Project → Deployment Protection 已关闭；必要时重新 `vercel deploy --prod` |
 | 登录 401 | 密码错误或演示数据未初始化 | 检查 `DEMO_MODE` / `SEED_DEMO_DATA`，或执行 `create_admin.py` |
-| 首次请求很慢 | Render 免费实例冷启动 | 升级实例或使用保活探针 |
+| 首次请求很慢 | Vercel Function 冷启动 | 正常现象；可用定时探活或升级实例 |
+| 浏览器直接打开 Vercel 域名超时 | 部分大陆网络对 `*.vercel.app` DNS 污染 | 通过 Netlify 站点访问，Netlify Function 在海外回源 |
 | 数据重启后丢失 | SQLite 容器临时盘 | 使用托管 PostgreSQL |
 | 工单无法关闭 | 未完成验收/心跳过期 | 先「维修回填」→「提交验收」→ 再「关闭」 |
 | Agent 不执行停机 | 设计如此 | 高风险动作只创建审批，由财务/管理员执行 |

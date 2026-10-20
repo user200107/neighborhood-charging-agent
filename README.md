@@ -240,19 +240,22 @@ python -m compileall app
 Netlify（静态站点 + /api 代理 Function）
         │ API_BASE_URL
         ▼
-Render / Railway / Fly.io / Docker（FastAPI + PostgreSQL）
+Vercel（FastAPI Function）
+        │ DATABASE_URL
+        ▼
+Neon PostgreSQL
 ```
 
 最短路径：
 
-1. 用 `render.yaml` 在 Render 创建 FastAPI + PostgreSQL（或构建 `Dockerfile` 部署到任意容器平台）。
-2. 在 Netlify 设置环境变量 `API_BASE_URL=https://你的后端域名`。
-3. 推送仓库并在 Netlify 导入，构建命令与发布目录已由 `netlify.toml` 配置。
-4. 访问 `https://<site>.netlify.app/api/health` 验证代理。
+1. 在 Vercel 导入仓库，Framework 选择 FastAPI（`vercel.json` 已配置 `app/main.py`）。
+2. 配置 `DATABASE_URL`、`JWT_SECRET`、`CORS_ORIGINS` 与 DeepSeek 变量。
+3. 在 Netlify 设置 `API_BASE_URL=https://<project>.vercel.app`，重新 Deploy。
+4. 访问 `https://<site>.netlify.app/api/health`，应返回 `database: postgresql`。
 
 完整步骤、环境变量、故障排查见 **[DEPLOY.md](DEPLOY.md)**。
 
-> 当前执行环境未提供 Netlify / Render 账号凭据，因此仓库已完成可部署配置与本地验证，但未代替你执行线上发布。
+> 当前线上环境已使用 Vercel + Neon 部署，本地 FastAPI、Docker 与临时隧道均已关闭。
 
 ## 文档
 
