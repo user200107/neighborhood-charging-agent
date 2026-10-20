@@ -3,10 +3,10 @@
 > 面向物业、运营、维修、财务与居民的统一充电运营工作台。  
 > 前端原生 HTML / CSS / JavaScript，后端 FastAPI + SQLAlchemy，Agent 高风险动作强制转审批。
 
-**在线预览：<https://neighborhood-charging.netlify.app>**（演示账号 `admin` / `Demo@2026`）
+**在线演示：<https://neighborhood-charging.netlify.app>**（`admin` / `Demo@2026`）
 
-> 当前预览链路：Netlify 前端 → Netlify Function → 临时隧道 → 本地 FastAPI → Docker PostgreSQL；LLM 使用 `.env` 中配置的 DeepSeek。  
-> 本机后端/隧道停止后 API 会不可用；持久部署请按 [DEPLOY.md](DEPLOY.md) 将 FastAPI 部署到 Render/Docker，并更新 `API_BASE_URL`。
+> 生产链路：Netlify 前端与 `/api` Function 代理 → Vercel FastAPI → Neon PostgreSQL，LLM 使用 DeepSeek。  
+> 后端已持久化，**本地无需运行 FastAPI、Docker 或隧道**。部署细节见 [DEPLOY.md](DEPLOY.md)。
 
 ![登录页](docs/screenshots/login.png)
 
@@ -35,7 +35,7 @@
 - **高风险动作不直接执行**：停机、退款、调价、批量改派只能创建审批；审批与执行均记录审批人、时间、影响范围、金额与回执。
 - **Agent 可追溯**：内置工具白名单、Pydantic 参数校验、风险分级、数据来源、`trace_id` 与运行记录；可选接入 OpenAI 兼容 LLM 润色回答。
 - **零构建前端**：原生 ES Modules + SVG 图表，不依赖 React/Vue/CDN，Netlify 直接托管。
-- **可部署**：Netlify 前端 + Function 同源代理 + Docker/Render FastAPI 后端，附完整部署配置。
+- **可部署**：Netlify 前端 + Function 同源代理 + Vercel FastAPI + Neon PostgreSQL，附完整部署配置。
 
 ![运营总览](docs/screenshots/dashboard.png)
 

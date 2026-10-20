@@ -3,9 +3,12 @@
 ## 0. 本次部署状态
 
 - 前端站点：<https://neighborhood-charging.netlify.app>（在线）。
-- Netlify Function：`api-proxy` 已随 Build API 构建并发布，`/api/health` 返回 `database: postgresql`。
-- FastAPI 后端：临时隧道连接本地服务；本地 PostgreSQL（Docker）已启用并完成种子数据，LLM 已接入。
-- 持久化：按第 2 节将 FastAPI + 云 PostgreSQL 部署到 Render/服务器，更新 `API_BASE_URL` 后重新 Deploy。本机或隧道停止时线上 API 会不可用。
+- Netlify Function：`api-proxy` 已构建发布，`API_BASE_URL` 指向 Vercel FastAPI。
+- FastAPI 后端：Vercel 项目 `neighborhood_charging_agent`，公网域名 <https://neighborhoodchargingagent.vercel.app>。
+- 数据库：Neon PostgreSQL，已创建表并写入演示数据；`/api/health` 返回 `database: postgresql`。
+- LLM：DeepSeek `deepseek-flash` 已接入，Agent 回答带 `llm_polished: true`。
+- **本地无需运行**：FastAPI、Docker、MySQL、PostgreSQL、公网隧道均可关闭。
+- 注意：`*.vercel.app` 在部分中国大陆网络会被 DNS 污染，浏览器直接打开 Vercel 域名可能失败；请通过 Netlify 站点访问，Netlify Function 在海外可正常回源。
 
 ## 1. 先说结论：Netlify 不能直接运行 FastAPI
 
@@ -24,9 +27,9 @@ Netlify 的 Serverless Functions 官方运行时是 **JavaScript / TypeScript / 
 └──────────────┬───────────────┘
                │ HTTPS + API_BASE_URL
 ┌──────────────▼───────────────┐
-│ Render / Railway / Fly.io    │
-│  └── Docker: FastAPI          │
-│       └── PostgreSQL          │
+│ Vercel                        │
+│  └── FastAPI Function        │
+│       └── Neon PostgreSQL    │
 └──────────────────────────────┘
 ```
 
@@ -34,23 +37,60 @@ Netlify Function 只做反向代理，不复制业务逻辑；FastAPI 仍是唯�
 
 ---
 
-## 2. 部署 FastAPI 后端（Render 推荐）
+## 2. 部署 FastAPI 后端（Vercel，已采用）
 
-### 2.1 使用 Blueprint（最快）
+Vercel 官方支持 FastAPI：识别 `app/main.py` 中的 `app` ASGI 实例，零配置构建为 Function。  
+参考：<https://vercel.com/docs/frameworks/backend/fastapi>
 
-1. 将本仓库推送到 GitHub。
-2. 登录 Render → **New** → **Blueprint** → 选择仓库。
-3. Render 读取 `render.yaml`，创建：
-   - Web Service：`neighborhood-charging-api`（Docker）
-   - PostgreSQL：`neighborhood-charging-db`
-4. 等待健康检查 `/api/health` 通过。
-5. 记录 Web Service 公网地址，例如 `https://neighborhood-charging-api.onrender.com`。
+### 2.1 创建项目
 
-`render.yaml` 默认开启演示模式与种子数据，首次启动会创建 4 个社区、设备、订单、工单与审批，可直接体验。
+1. 登录 <https://vercel.com>，确保使用 Hobby 免费计划（无需信用卡）。
+2. 安装 CLI：`npm i -g vercel`，或使用 `npx vercel`。
+3. 在仓库根目录执行：
 
-> Render 免费实例会休眠，首次请求可能需要几十秒唤醒。生产请使用付费实例、关闭 `DEMO_MODE`，并配置备份与告警。
+```bash
+vercel link
+vercel deploy --prod
+```
 
-### 2.2 使用任意 Docker 平台
+项目配置：
+
+- Framework：`FastAPI`
+- Root Directory：仓库根目录
+- Build / Output：保持自动检测
+
+### 2.2 配置环境变量
+
+在 Vercel Project → Settings → Environment Variables 中添加：
+
+```text
+APP_ENV=production
+DEBUG=false
+DEMO_MODE=true
+SEED_DEMO_DATA=true
+ALLOW_SQLITE_FALLBACK=false
+DATABASE_URL=postgresql://...neon.tech/neondb?sslmode=require
+JWT_SECRET=<32 字节以上随机值>
+CORS_ORIGINS=https://neighborhood-charging.netlify.app
+LLM_MODEL=deepseek-flash
+LLM_API_KEY=<DeepSeek Key>
+LLM_BASE_URL=https://api.deepseek.com
+```
+
+修改环境变量后需要重新 `vercel deploy --prod`。
+
+### 2.3 验证
+
+```text
+GET https://<project>.vercel.app/api/health
+→ {"status":"ok","database":"postgresql","database_ok":true}
+```
+
+> `*.vercel.app` 在部分中国大陆网络会被 DNS 污染，直接打开 Vercel 域名可能超时；这不影响 Netlify Function 在海外回源，用户始终访问 Netlify 站点。
+>
+> Render 仍可作为备选：绑定支付方式后使用 `render.yaml` 创建 Docker Web Service；本项目当前未使用 Render，因为其 API 返回 `402 Payment information is required`。
+
+### 2.4 使用任意 Docker 平台
 
 ```bash
 docker build -t neighborhood-charging-api .
@@ -66,7 +106,7 @@ docker run -p 8000:8000 \
 
 容器内使用 `$PORT`（默认 8000），已内置 `/api/health` 健康检查。
 
-### 2.3 生产环境初始化管理员
+### 2.5 生产环境初始化管理员
 
 关闭种子数据后，空库没有登录账号。首次部署执行：
 
@@ -78,9 +118,9 @@ python scripts/create_admin.py \
   --tenant-name '邻里充电'
 ```
 
-Render 可在 Shell 中执行；其他平台可用一次性 Job 执行。脚本会创建租户、管理员并授权租户下全部社区。
+Vercel 没有常驻 Shell，可在本地对 Neon 执行该脚本；其他平台可在一次性 Job 中执行。脚本会创建租户、管理员并授权租户下全部社区。
 
-### 2.4 生产环境变量
+### 2.6 生产环境变量
 
 | 变量 | 必填 | 说明 |
 |---|---|---|
